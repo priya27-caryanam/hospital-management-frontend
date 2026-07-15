@@ -57,7 +57,7 @@ apiClient.interceptors.response.use(
       // Server responded with a non-2xx status
       const {data, status} = error.response;
       errorMessage =
-        data?.message ||git branch
+        data?.message ||
         data?.error ||
         `Request failed with status ${status}`;
     } else if (error.request) {
