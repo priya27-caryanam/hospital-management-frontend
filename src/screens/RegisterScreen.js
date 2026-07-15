@@ -250,7 +250,7 @@ const RegisterScreen = ({navigation}) => {
     phoneNumber: '',
     dateOfBirth: '',
     gender: '',
-    role: '',
+    role: 'PATIENT',
     password: '',
     confirmPassword: '',
   });
@@ -299,7 +299,7 @@ const RegisterScreen = ({navigation}) => {
       await userAPI.registerUser(payload);
 
       // 3. Show success and reset form
-      setSuccessMessage('Staff account created successfully! 🎉');
+      setSuccessMessage('Patient account registered successfully! 🎉');
       setForm({
         firstName: '',
         lastName: '',
@@ -307,7 +307,7 @@ const RegisterScreen = ({navigation}) => {
         phoneNumber: '',
         dateOfBirth: '',
         gender: '',
-        role: '',
+        role: 'PATIENT',
         password: '',
         confirmPassword: '',
       });
@@ -333,9 +333,9 @@ const RegisterScreen = ({navigation}) => {
             <Text style={styles.pageHeaderEmoji}>👤</Text>
           </View>
           <View style={styles.pageHeaderText}>
-            <Text style={styles.pageTitle}>Register Staff</Text>
+            <Text style={styles.pageTitle}>Register Patient</Text>
             <Text style={styles.pageSubtitle}>
-              Create a new hospital staff account
+              Create a  new patient account
             </Text>
           </View>
         </View>
@@ -430,18 +430,8 @@ const RegisterScreen = ({navigation}) => {
           {/* Divider */}
           <View style={styles.sectionDivider} />
 
-          {/* Role & Security */}
-          <SectionHeader title="Role & Security" icon="🔑" />
-
-          {/* Role dropdown */}
-          <DropdownPicker
-            label="Role"
-            value={form.role}
-            options={Config.ROLES}
-            onSelect={val => updateField('role', val)}
-            placeholder="Select staff role"
-            error={errors.role}
-          />
+          {/* Account Security */}
+          <SectionHeader title="Account Security" icon="🔑" />
 
           {/* Password */}
           <Input

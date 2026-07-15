@@ -190,7 +190,7 @@ const WelcomeScreen = ({navigation}) => {
       {/* ── Bottom Call-To-Action Button ── */}
       <View style={styles.bottomCtaContainer}>
         <Text style={styles.ctaPrompt}>
-          Are you a member of our hospital staff?
+          Are you a patient or hospital staff member?
         </Text>
         <Button
           title="Login to Portal"

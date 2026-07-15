@@ -140,7 +140,7 @@ const LoginScreen = ({navigation}) => {
             style={[styles.card, {transform: [{translateX: shakeAnim}]}]}>
             <Text style={styles.cardTitle}>Welcome Back</Text>
             <Text style={styles.cardSubtitle}>
-              Sign in to your admin account
+              Sign in to your account
             </Text>
 
             {/* API Error Banner */}

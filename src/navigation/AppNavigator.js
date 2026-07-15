@@ -79,7 +79,7 @@ const AppNavigator = () => {
           name={SCREENS.REGISTER}
           component={RegisterScreen}
           options={{
-            title: 'Register Staff',
+            title: 'Register Patient',
             headerBackVisible: true,
           }}
         />
