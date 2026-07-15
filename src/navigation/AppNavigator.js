@@ -18,6 +18,7 @@ import WelcomeScreen from '../screens/WelcomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import AdminHomeScreen from '../screens/AdminHomeScreen';
+import PatientHomeScreen from '../screens/PatientHomeScreen';
 import Colors from '../constants/colors';
 import {FontWeight, FontSize} from '../constants/typography';
 
@@ -30,6 +31,7 @@ export const SCREENS = {
   LOGIN: 'Login',
   REGISTER: 'Register',
   ADMIN_HOME: 'AdminHome',
+  PATIENT_HOME: 'PatientHome',
 };
 
 // ─── Default header options for authenticated screens ─────────────────────────
@@ -88,6 +90,13 @@ const AppNavigator = () => {
         <Stack.Screen
           name={SCREENS.ADMIN_HOME}
           component={AdminHomeScreen}
+          options={{headerShown: false}}
+        />
+
+        {/* ── Patient Home ── */}
+        <Stack.Screen
+          name={SCREENS.PATIENT_HOME}
+          component={PatientHomeScreen}
           options={{headerShown: false}}
         />
       </Stack.Navigator>

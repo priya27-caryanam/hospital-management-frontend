@@ -97,8 +97,14 @@ const LoginScreen = ({navigation}) => {
         tokenType: apiData.tokenType,
       });
 
-      // 5. Navigate to AdminHome (replace so user cannot go back to Login)
-      navigation.replace(SCREENS.ADMIN_HOME, {user: apiData});
+      // 5. Navigate based on role (replace so user cannot go back to Login)
+      if (apiData.role === 'ADMIN') {
+        navigation.replace(SCREENS.ADMIN_HOME, {user: apiData});
+      } else if (apiData.role === 'PATIENT') {
+        navigation.replace(SCREENS.PATIENT_HOME, {user: apiData});
+      } else {
+        navigation.replace(SCREENS.ADMIN_HOME, {user: apiData});
+      }
     } catch (err) {
       // Normalised error from response interceptor
       setApiError(err.message || 'Login failed. Please check your credentials.');
