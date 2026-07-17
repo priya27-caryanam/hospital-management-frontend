@@ -15,7 +15,11 @@ export const layoutStyles = StyleSheet.create({
   flex1: {flex: 1},
   center: {justifyContent: 'center', alignItems: 'center'},
   row: {flexDirection: 'row', alignItems: 'center'},
-  rowBetween: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
+  rowBetween: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   screenContainer: {
     flex: 1,
     backgroundColor: Colors.background,

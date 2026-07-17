@@ -59,8 +59,7 @@ const Input = ({
     }
   };
 
-  const togglePasswordVisibility = () =>
-    setIsPasswordVisible(prev => !prev);
+  const togglePasswordVisibility = () => setIsPasswordVisible(prev => !prev);
 
   return (
     <View style={[styles.wrapper, style]}>
@@ -76,17 +75,11 @@ const Input = ({
           !editable && styles.inputContainerDisabled,
         ]}>
         {/* Left icon */}
-        {leftIcon ? (
-          <View style={styles.iconLeft}>{leftIcon}</View>
-        ) : null}
+        {leftIcon ? <View style={styles.iconLeft}>{leftIcon}</View> : null}
 
         {/* Text input */}
         <TextInput
-          style={[
-            styles.input,
-            multiline && styles.multilineInput,
-            inputStyle,
-          ]}
+          style={[styles.input, multiline && styles.multilineInput, inputStyle]}
           value={value}
           onChangeText={onChangeText}
           onFocus={handleFocus}

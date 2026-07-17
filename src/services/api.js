@@ -30,9 +30,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async config => {
     try {
-      const token = await AsyncStorage.getItem(
-        Config.STORAGE_KEYS.AUTH_TOKEN,
-      );
+      const token = await AsyncStorage.getItem(Config.STORAGE_KEYS.AUTH_TOKEN);
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -57,9 +55,7 @@ apiClient.interceptors.response.use(
       // Server responded with a non-2xx status
       const {data, status} = error.response;
       errorMessage =
-        data?.message ||
-        data?.error ||
-        `Request failed with status ${status}`;
+        data?.message || data?.error || `Request failed with status ${status}`;
     } else if (error.request) {
       // Request was made but no response received (network issue)
       errorMessage =
@@ -82,37 +78,41 @@ apiClient.interceptors.response.use(
 
 export const authAPI = {
   /**
-   * Admin Login
-   * POST /api/v1/auth/login
+   * Login to the system
+   * POST /api/auth/login
    *
    * @param {string} email
    * @param {string} password
-   * @returns {Promise<ApiResponse<LoginResponse>>}
-   *   data: { accessToken, tokenType, firstName, lastName, email, role }
+   * @returns {Promise<AxiosResponse<AuthResponse>>}
+   *   data: { token, role, userId, name, email }
    */
   login: (email, password) =>
-    apiClient.post('/api/v1/auth/login', {email, password}),
-};
+    apiClient.post('/api/auth/login', {email, password}),
 
-// ─── User API ────────────────────────────────────────────────────────────────
-
-export const userAPI = {
   /**
-   * Register a new staff user (Admin only)
-   * POST /api/v1/users/register
-   *
-   * @param {Object} data
-   * @param {string} data.firstName
-   * @param {string} data.lastName
-   * @param {string} data.email
-   * @param {string} data.password
-   * @param {string} data.phoneNumber   — Indian format: ^[6-9]\d{9}$
-   * @param {string} data.dateOfBirth   — ISO date string: 'YYYY-MM-DD'
-   * @param {string} data.gender        — 'MALE' | 'FEMALE' | 'OTHER'
-   * @param {string} data.role          — 'DOCTOR' | 'RECEPTIONIST' | 'NURSE' | 'PHARMACIST' | 'LAB_TECHNICIAN' | 'ACCOUNTANT'
-   * @returns {Promise<ApiResponse<UserResponse>>}
+   * Register a new patient
+   * POST /api/auth/register/patient
    */
-  registerUser: data => apiClient.post('/api/v1/users/register', data),
+  registerPatient: data => apiClient.post('/api/auth/register/patient', data),
+
+  /**
+   * Register a new doctor
+   * POST /api/auth/register/doctor
+   */
+  registerDoctor: data => apiClient.post('/api/auth/register/doctor', data),
+
+  /**
+   * Register a new nurse
+   * POST /api/auth/register/nurse
+   */
+  registerNurse: data => apiClient.post('/api/auth/register/nurse', data),
+
+  /**
+   * Register a new receptionist
+   * POST /api/auth/register/receptionist
+   */
+  registerReceptionist: data =>
+    apiClient.post('/api/auth/register/receptionist', data),
 };
 
 export default apiClient;

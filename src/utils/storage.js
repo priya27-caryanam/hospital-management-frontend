@@ -54,7 +54,7 @@ export const removeToken = async () => {
 
 /**
  * Save user profile data (non-sensitive) as JSON string.
- * @param {Object} userData - { firstName, lastName, email, role, tokenType }
+ * @param {Object} userData - { name, email, role, userId }
  */
 export const saveUserData = async userData => {
   try {

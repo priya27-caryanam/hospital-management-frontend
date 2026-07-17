@@ -7,20 +7,11 @@
  */
 
 import React, {useEffect, useRef} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  StatusBar,
-  Dimensions,
-} from 'react-native';
+import {View, Text, StyleSheet, Animated, StatusBar} from 'react-native';
 import {SCREENS} from '../navigation/AppNavigator';
 import Colors from '../constants/colors';
 import {FontSize, FontWeight} from '../constants/typography';
 import Config from '../constants/config';
-
-const {width} = Dimensions.get('window');
 
 const SplashScreen = ({navigation}) => {
   // ─── Animation refs ────────────────────────────────────────────────────────
@@ -183,8 +174,16 @@ const LoadingDots = () => {
   useEffect(() => {
     const animate = dot =>
       Animated.sequence([
-        Animated.timing(dot, {toValue: 1, duration: 300, useNativeDriver: true}),
-        Animated.timing(dot, {toValue: 0.3, duration: 300, useNativeDriver: true}),
+        Animated.timing(dot, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dot, {
+          toValue: 0.3,
+          duration: 300,
+          useNativeDriver: true,
+        }),
       ]);
 
     const loop = Animated.loop(

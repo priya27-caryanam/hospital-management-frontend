@@ -114,28 +114,37 @@ const PatientHomeScreen = ({navigation, route}) => {
   };
 
   // Helper values
-  const displayName = userData
-    ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Patient'
-    : 'Patient';
+  const displayName = userData?.name || 'Patient';
   const displayEmail = userData?.email || 'patient@medicore.com';
-  const displayPhone = userData?.phoneNumber || 'Not provided';
+  const displayPhone =
+    userData?.mobile || userData?.phoneNumber || 'Not provided';
   const displayDob = userData?.dateOfBirth || 'Not provided';
   const displayGender = userData?.gender
-    ? userData.gender.charAt(0).toUpperCase() + userData.gender.slice(1).toLowerCase()
+    ? userData.gender.charAt(0).toUpperCase() +
+      userData.gender.slice(1).toLowerCase()
     : 'Not provided';
 
   // ─── Quick action handlers ─────────────────────────────────────────────────
   const handleSearchDoctor = () => {
-    Alert.alert('Search Doctor', 'Search specialist doctors feature is coming soon!');
+    Alert.alert(
+      'Search Doctor',
+      'Search specialist doctors feature is coming soon!',
+    );
   };
 
   const handleBookAppointment = () => {
-    Alert.alert('Book Appointment', 'Online appointment booking schedule is coming soon!');
+    Alert.alert(
+      'Book Appointment',
+      'Online appointment booking schedule is coming soon!',
+    );
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.primaryDark} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={Colors.primaryDark}
+      />
 
       {/* ── Custom Header ── */}
       <View style={styles.header}>
@@ -145,7 +154,9 @@ const PatientHomeScreen = ({navigation, route}) => {
             <View style={styles.crossH} />
           </View>
           <View>
-            <Text style={styles.headerHospitalName}>{Config.HOSPITAL_NAME}</Text>
+            <Text style={styles.headerHospitalName}>
+              {Config.HOSPITAL_NAME}
+            </Text>
             <Text style={styles.headerTagline}>Patient Portal</Text>
           </View>
         </View>
@@ -159,16 +170,16 @@ const PatientHomeScreen = ({navigation, route}) => {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
-        
-        <Animated.View style={{opacity: fadeAnim, transform: [{translateY: slideAnim}]}}>
-          
+        <Animated.View
+          style={{opacity: fadeAnim, transform: [{translateY: slideAnim}]}}>
           {/* ── Welcome Card ── */}
           <View style={styles.welcomeCard}>
             <View style={styles.welcomeInfo}>
               <Text style={styles.welcomeGreeting}>{getGreeting()},</Text>
               <Text style={styles.welcomeName}>{displayName} 👋</Text>
               <Text style={styles.welcomeTip}>
-                Tip: Drink at least 3 liters of water daily to maintain peak metabolic function and energy levels.
+                Tip: Drink at least 3 liters of water daily to maintain peak
+                metabolic function and energy levels.
               </Text>
             </View>
             <View style={styles.welcomeIconBg}>
@@ -178,16 +189,16 @@ const PatientHomeScreen = ({navigation, route}) => {
 
           {/* ── Quick Action Buttons (2-Column) ── */}
           <View style={styles.actionsRow}>
-            <TouchableOpacity 
-              style={[styles.actionBtn, {backgroundColor: Colors.primaryLight}]} 
+            <TouchableOpacity
+              style={[styles.actionBtn, {backgroundColor: Colors.primaryLight}]}
               onPress={handleSearchDoctor}
               activeOpacity={0.85}>
               <Text style={styles.actionIcon}>🔍</Text>
               <Text style={styles.actionText}>Search Doctor</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.actionBtn, {backgroundColor: Colors.accent}]} 
+            <TouchableOpacity
+              style={[styles.actionBtn, {backgroundColor: Colors.accent}]}
               onPress={handleBookAppointment}
               activeOpacity={0.85}>
               <Text style={styles.actionIcon}>📅</Text>
@@ -199,7 +210,9 @@ const PatientHomeScreen = ({navigation, route}) => {
           <Text style={styles.sectionTitle}>Digital Health Card</Text>
           <View style={styles.profileCard}>
             <View style={styles.profileHeader}>
-              <Text style={styles.profileCardLabel}>MEDICORE PATIENT IDENTIFICATION</Text>
+              <Text style={styles.profileCardLabel}>
+                MEDICORE PATIENT IDENTIFICATION
+              </Text>
               <View style={styles.profileActiveIndicator}>
                 <View style={styles.activeDot} />
                 <Text style={styles.activeText}>ACTIVE</Text>
@@ -275,20 +288,30 @@ const PatientHomeScreen = ({navigation, route}) => {
               </View>
               <View style={styles.recordDetails}>
                 <Text style={styles.recordTitle}>Annual Health Checkup</Text>
-                <Text style={styles.recordDoc}>Dr. Sameer Patil • General Medicine</Text>
+                <Text style={styles.recordDoc}>
+                  Dr. Sameer Patil • General Medicine
+                </Text>
                 <Text style={styles.recordDate}>Completed on Jun 15, 2026</Text>
               </View>
             </View>
-            
+
             <View style={styles.recordDivider} />
 
             <View style={styles.recordItem}>
-              <View style={[styles.recordIconBg, {backgroundColor: Colors.infoLight}]}>
+              <View
+                style={[
+                  styles.recordIconBg,
+                  {backgroundColor: Colors.infoLight},
+                ]}>
                 <Text style={styles.recordIcon}>🔬</Text>
               </View>
               <View style={styles.recordDetails}>
-                <Text style={styles.recordTitle}>Complete Blood Count (CBC) Lab</Text>
-                <Text style={styles.recordDoc}>MediCore Diagnostics Laboratory</Text>
+                <Text style={styles.recordTitle}>
+                  Complete Blood Count (CBC) Lab
+                </Text>
+                <Text style={styles.recordDoc}>
+                  MediCore Diagnostics Laboratory
+                </Text>
                 <Text style={styles.recordDate}>Completed on Jun 15, 2026</Text>
               </View>
             </View>
@@ -298,18 +321,22 @@ const PatientHomeScreen = ({navigation, route}) => {
           <Text style={styles.sectionTitle}>Active Prescriptions</Text>
           <View style={styles.card}>
             <View style={styles.prescriptionHeader}>
-              <Text style={styles.prescriptionHeaderTitle}>Current Medications</Text>
+              <Text style={styles.prescriptionHeaderTitle}>
+                Current Medications
+              </Text>
               <Text style={styles.prescriptionRef}>Ref: RX-883012</Text>
             </View>
             <View style={styles.cardDivider} />
-            
+
             <View style={styles.medicationRow}>
               <View style={styles.medIndicator}>
                 <Text style={styles.medEmoji}>💊</Text>
               </View>
               <View style={styles.medDetails}>
                 <Text style={styles.medName}>Metformin 500mg</Text>
-                <Text style={styles.medInstruction}>1 tablet after dinner daily (Oral)</Text>
+                <Text style={styles.medInstruction}>
+                  1 tablet after dinner daily (Oral)
+                </Text>
               </View>
               <Text style={styles.medDuration}>30 Days</Text>
             </View>
@@ -322,7 +349,9 @@ const PatientHomeScreen = ({navigation, route}) => {
               </View>
               <View style={styles.medDetails}>
                 <Text style={styles.medName}>Atorvastatin 10mg</Text>
-                <Text style={styles.medInstruction}>1 tablet before bedtime daily (Oral)</Text>
+                <Text style={styles.medInstruction}>
+                  1 tablet before bedtime daily (Oral)
+                </Text>
               </View>
               <Text style={styles.medDuration}>30 Days</Text>
             </View>

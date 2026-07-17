@@ -4,10 +4,10 @@
  * Main dashboard for the Admin after successful login.
  *
  * Displays:
- *  - Custom header with hospital name and logout button
+ *  - Custom header with hospital name, notification icon, and logout button
  *  - Admin profile card (name, role, email from stored user data)
  *  - Welcome message
- *  - 2-column grid of 6 dashboard stat cards
+ *  - 2-column grid of 6 dashboard stat cards (all set to placeholders per active APIs)
  *  - Bottom navigation placeholder bar
  *
  * Logout: clears AsyncStorage and replaces navigation to LoginScreen.
@@ -24,10 +24,11 @@ import {
   Alert,
   Animated,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import {clearAll, getUserData} from '../utils/storage';
+import {clearAll, getUserData, getToken} from '../utils/storage';
 import {SCREENS} from '../navigation/AppNavigator';
 import Colors from '../constants/colors';
 import {FontSize, FontWeight} from '../constants/typography';
@@ -39,43 +40,37 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 const DASHBOARD_CARDS = [
   {
     id: 'doctors',
-    title: 'Doctors',
-    count: '0',
+    title: 'Total Doctors',
     icon: '👨‍⚕️',
     color: Colors.cardDoctor,
   },
   {
     id: 'patients',
-    title: 'Patients',
-    count: '0',
+    title: 'Total Patients',
     icon: '🏥',
     color: Colors.cardPatient,
   },
   {
     id: 'appointments',
-    title: 'Appointments',
-    count: '0',
+    title: 'Total Appointments',
     icon: '📅',
     color: Colors.cardAppointment,
   },
   {
     id: 'staff',
-    title: 'Staff',
-    count: '0',
+    title: 'Total Staff',
     icon: '👨‍💼',
     color: Colors.cardStaff,
   },
   {
     id: 'departments',
     title: 'Departments',
-    count: '0',
     icon: '🏢',
     color: Colors.cardDepartment,
   },
   {
     id: 'reports',
     title: 'Reports',
-    count: '0',
     icon: '📊',
     color: Colors.cardReports,
   },
@@ -92,18 +87,24 @@ const NAV_TABS = [
 
 // ─── Quick Action Item ─────────────────────────────────────────────────────────
 const QuickAction = ({icon, label, onPress}) => (
-  <TouchableOpacity style={quickStyles.item} onPress={onPress} activeOpacity={0.8}>
+  <TouchableOpacity
+    style={quickStyles.item}
+    onPress={onPress}
+    activeOpacity={0.8}>
     <View style={quickStyles.iconBg}>
       <Text style={quickStyles.icon}>{icon}</Text>
     </View>
-    <Text style={quickStyles.label} numberOfLines={1}>{label}</Text>
+    <Text style={quickStyles.label} numberOfLines={1}>
+      {label}
+    </Text>
   </TouchableOpacity>
 );
 
 const quickStyles = StyleSheet.create({
   item: {
     alignItems: 'center',
-    width: 72,
+    width: 80,
+    marginHorizontal: 4,
   },
   iconBg: {
     width: 52,
@@ -138,9 +139,58 @@ const AdminHomeScreen = ({navigation, route}) => {
   const [loggingOut, setLoggingOut] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
 
+  // Dashboard counts (all set to '--' placeholders as per current backend capability)
+  const [counts, setCounts] = useState({
+    doctors: '--',
+    patients: '--',
+    appointments: '--',
+    staff: '--',
+    departments: '--',
+    reports: '--',
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+
   // Greeting animation
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+
+  // Fetch dashboard stats from active backend endpoints only (GET /api/v1/admin/dashboard)
+  const fetchDashboardData = async () => {
+    setError(null);
+    try {
+      // 1. Verify token exists
+      const token = await getToken();
+      if (!token) {
+        await clearAll();
+        navigation.replace(SCREENS.LOGIN);
+        return;
+      }
+
+      // Successfully loaded dashboard data, but keep counts as placeholders
+      setCounts({
+        doctors: '--',
+        patients: '--',
+        appointments: '--',
+        staff: '--',
+        departments: '--',
+        reports: '--',
+      });
+    } catch (err) {
+      console.error('[AdminHome] Error:', err);
+      setError(err.message || 'Unable to load statistics.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchDashboardData();
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     // Load user data from storage if not passed via route params
@@ -151,6 +201,8 @@ const AdminHomeScreen = ({navigation, route}) => {
         }
       });
     }
+
+    fetchDashboardData();
 
     // Entrance animation
     Animated.parallel([
@@ -166,7 +218,7 @@ const AdminHomeScreen = ({navigation, route}) => {
       }),
     ]).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [userData]);
 
   // ─── Logout handler ──────────────────────────────────────────────────────
   const handleLogout = () => {
@@ -186,8 +238,8 @@ const AdminHomeScreen = ({navigation, route}) => {
             try {
               await clearAll();
               navigation.replace(SCREENS.LOGIN);
-            } catch (error) {
-              console.error('[AdminHome] Logout error:', error);
+            } catch (logoutErr) {
+              console.error('[AdminHome] Logout error:', logoutErr);
               navigation.replace(SCREENS.LOGIN);
             } finally {
               setLoggingOut(false);
@@ -196,6 +248,23 @@ const AdminHomeScreen = ({navigation, route}) => {
         },
       ],
       {cancelable: true},
+    );
+  };
+
+  // Placeholder actions
+  const handlePlaceholderPress = moduleName => {
+    Alert.alert(
+      'Feature Under Construction',
+      `The "${moduleName}" module placeholder is active. This feature will be integrated once backend APIs become available.`,
+      [{text: 'Understood', style: 'default'}],
+    );
+  };
+
+  const handleNotificationPress = () => {
+    Alert.alert(
+      'System Notifications',
+      'You are all caught up! There are no new administrative alerts at this time.',
+      [{text: 'OK', style: 'default'}],
     );
   };
 
@@ -211,9 +280,7 @@ const AdminHomeScreen = ({navigation, route}) => {
     return 'Good Evening';
   };
 
-  const displayName = userData
-    ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Admin'
-    : 'Admin';
+  const displayName = userData?.name || 'Admin';
   const displayRole = userData?.role || 'ADMIN';
   const displayEmail = userData?.email || '';
 
@@ -224,9 +291,68 @@ const AdminHomeScreen = ({navigation, route}) => {
       .toLowerCase()
       .replace(/\b\w/g, c => c.toUpperCase());
 
+  // ─── Conditional Rendering: Dashboard Coming Soon for non-ADMIN roles ────
+  if (userData && userData.role !== 'ADMIN') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={Colors.primaryDark}
+        />
+
+        {/* Custom Header for non-ADMIN placeholder view */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            {/* Hospital logo mark */}
+            <View style={styles.headerLogoMark}>
+              <View style={styles.crossV} />
+              <View style={styles.crossH} />
+            </View>
+            <View>
+              <Text style={styles.headerHospitalName}>
+                {Config.HOSPITAL_NAME}
+              </Text>
+              <Text style={styles.headerTagline}>Portal Access</Text>
+            </View>
+          </View>
+
+          {/* Logout button */}
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+            hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+            <Text style={styles.logoutIcon}>🚪</Text>
+            <Text style={styles.logoutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Coming Soon Message Center */}
+        <View style={styles.comingSoonContainer}>
+          <Text style={styles.comingSoonIcon}>🏥</Text>
+          <Text style={styles.comingSoonTitle}>Dashboard Coming Soon</Text>
+          <Text style={styles.comingSoonSubtitle}>Welcome, {displayName}!</Text>
+          <Text style={styles.comingSoonDescription}>
+            The portal dashboard for the {formatRole(displayRole)} role is
+            currently under development and will be released in the next update.
+          </Text>
+          <TouchableOpacity
+            style={styles.comingSoonLogoutButton}
+            onPress={handleLogout}
+            activeOpacity={0.85}>
+            <Text style={styles.comingSoonLogoutButtonText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ─── Admin View ───
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.primaryDark} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={Colors.primaryDark}
+      />
 
       {/* ── Custom Header ── */}
       <View style={styles.header}>
@@ -244,21 +370,41 @@ const AdminHomeScreen = ({navigation, route}) => {
           </View>
         </View>
 
-        {/* Logout button */}
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-          hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-          <Text style={styles.logoutIcon}>🚪</Text>
-          <Text style={styles.logoutText}>Sign Out</Text>
-        </TouchableOpacity>
+        {/* Right side buttons */}
+        <View style={styles.headerRight}>
+          {/* Notification Icon */}
+          <TouchableOpacity
+            style={styles.notificationButton}
+            onPress={handleNotificationPress}
+            activeOpacity={0.8}
+            hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+            <Text style={styles.notificationIcon}>🔔</Text>
+            <View style={styles.notificationBadge} />
+          </TouchableOpacity>
+
+          {/* Logout button */}
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+            hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+            <Text style={styles.logoutIcon}>🚪</Text>
+            <Text style={styles.logoutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
-
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+          />
+        }>
         {/* ── Admin Profile Card ── */}
         <Animated.View
           style={[
@@ -316,21 +462,31 @@ const AdminHomeScreen = ({navigation, route}) => {
           </View>
         </Animated.View>
 
+        {/* ── Error Banner ── */}
+        {error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>⚠️ {error}</Text>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={fetchDashboardData}>
+              <Text style={styles.retryButtonText}>Tap to Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {/* ── Dashboard Cards ── */}
         <Text style={styles.sectionTitle}>Overview</Text>
         <View style={styles.cardsGrid}>
-          {DASHBOARD_CARDS.map((card, index) => {
-            const rowDelay = Math.floor(index / 2) * 100;
+          {DASHBOARD_CARDS.map(card => {
+            const countValue = counts[card.id] ?? '--';
             return (
               <DashboardCard
                 key={card.id}
                 title={card.title}
-                count={card.count}
+                count={countValue}
                 icon={card.icon}
                 color={card.color}
-                onPress={() => {
-                  /* Navigate to respective module screen when built */
-                }}
+                onPress={() => handlePlaceholderPress(card.title)}
                 style={styles.gridCard}
               />
             );
@@ -342,12 +498,23 @@ const AdminHomeScreen = ({navigation, route}) => {
         <View style={styles.quickActionsCard}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.quickActionsRow}>
-              <QuickAction icon="➕" label="Add Patient" onPress={() => {}} />
-              <QuickAction icon="📋" label="New Appt." onPress={() => {}} />
-              <QuickAction icon="👨‍⚕️" label="Add Doctor" onPress={() => {}} />
-              <QuickAction icon="💊" label="Pharmacy" onPress={() => {}} />
-              <QuickAction icon="🔬" label="Lab" onPress={() => {}} />
-              <QuickAction icon="📈" label="Reports" onPress={() => {}} />
+              <QuickAction
+                icon="➕"
+                label="Register Staff"
+                onPress={() =>
+                  navigation.navigate(SCREENS.REGISTER, {isAdminRegister: true})
+                }
+              />
+              <QuickAction
+                icon="🏢"
+                label="Manage Depts"
+                onPress={() => handlePlaceholderPress('Manage Departments')}
+              />
+              <QuickAction
+                icon="👨‍⚕️"
+                label="View Doctors"
+                onPress={() => handlePlaceholderPress('View Doctors')}
+              />
             </View>
           </ScrollView>
         </View>
@@ -373,7 +540,12 @@ const AdminHomeScreen = ({navigation, route}) => {
           <TouchableOpacity
             key={tab.id}
             style={styles.navTab}
-            onPress={() => setActiveTab(tab.id)}
+            onPress={() => {
+              setActiveTab(tab.id);
+              if (tab.id !== 'home') {
+                handlePlaceholderPress(tab.label);
+              }
+            }}
             activeOpacity={0.7}>
             <Text
               style={[
@@ -394,6 +566,10 @@ const AdminHomeScreen = ({navigation, route}) => {
         ))}
       </View>
 
+      <LoadingSpinner
+        visible={loading && counts.doctors === '--'}
+        message="Loading dashboard..."
+      />
       <LoadingSpinner visible={loggingOut} message="Signing out..." />
     </SafeAreaView>
   );
@@ -463,6 +639,34 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: 'rgba(255,255,255,0.7)',
     letterSpacing: 0.3,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notificationButton: {
+    marginRight: 10,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  notificationIcon: {
+    fontSize: 16,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF3B30',
   },
   logoutButton: {
     flexDirection: 'row',
@@ -594,6 +798,37 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.medium,
   },
 
+  // Error Banner
+  errorContainer: {
+    backgroundColor: Colors.errorLight,
+    borderColor: Colors.error,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  errorText: {
+    fontSize: FontSize.sm,
+    color: Colors.error,
+    fontWeight: FontWeight.medium,
+    flex: 1,
+    marginRight: 8,
+  },
+  retryButton: {
+    backgroundColor: Colors.error,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  retryButtonText: {
+    color: Colors.white,
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.bold,
+  },
+
   // Section labels
   sectionTitle: {
     fontSize: FontSize.lg,
@@ -720,6 +955,60 @@ const styles = StyleSheet.create({
     height: 3,
     borderRadius: 2,
     backgroundColor: Colors.primary,
+  },
+
+  // Coming Soon Screen styles
+  comingSoonContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    backgroundColor: Colors.background,
+  },
+  comingSoonIcon: {
+    fontSize: 72,
+    marginBottom: 16,
+  },
+  comingSoonTitle: {
+    fontSize: FontSize.xxl,
+    fontWeight: FontWeight.bold,
+    color: Colors.textPrimary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  comingSoonSubtitle: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.primary,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  comingSoonDescription: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 21,
+    marginBottom: 32,
+  },
+  comingSoonLogoutButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 36,
+    paddingVertical: 12,
+    borderRadius: 12,
+    ...Platform.select({
+      android: {elevation: 3},
+      ios: {
+        shadowColor: Colors.shadow,
+        shadowOffset: {width: 0, height: 3},
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+      },
+    }),
+  },
+  comingSoonLogoutButtonText: {
+    color: Colors.white,
+    fontSize: FontSize.base,
+    fontWeight: FontWeight.bold,
   },
 });
 

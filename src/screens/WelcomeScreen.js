@@ -17,7 +17,6 @@ import {
   StyleSheet,
   ScrollView,
   StatusBar,
-  TouchableOpacity,
   Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -97,7 +96,10 @@ const WelcomeScreen = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.primaryDark} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={Colors.primaryDark}
+      />
 
       {/* ── Header ── */}
       <View style={styles.header}>
@@ -115,12 +117,13 @@ const WelcomeScreen = ({navigation}) => {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
-
         {/* ── Hero Banner ── */}
         <View style={styles.heroCard}>
           <View style={styles.heroTextContent}>
             <Text style={styles.heroWelcome}>Welcome to MediCore</Text>
-            <Text style={styles.heroTitle}>Your Health is Our Top Priority</Text>
+            <Text style={styles.heroTitle}>
+              Your Health is Our Top Priority
+            </Text>
             <Text style={styles.heroDesc}>
               Providing world-class healthcare services with state-of-the-art
               facilities and expert medical professionals.

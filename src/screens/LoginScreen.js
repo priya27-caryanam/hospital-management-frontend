@@ -18,7 +18,6 @@ import {
   ScrollView,
   StatusBar,
   Animated,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -48,11 +47,31 @@ const LoginScreen = ({navigation}) => {
   // ─── Shake animation (called on validation failure) ───────────────────────
   const triggerShake = () => {
     Animated.sequence([
-      Animated.timing(shakeAnim, {toValue: 10, duration: 60, useNativeDriver: true}),
-      Animated.timing(shakeAnim, {toValue: -10, duration: 60, useNativeDriver: true}),
-      Animated.timing(shakeAnim, {toValue: 8, duration: 60, useNativeDriver: true}),
-      Animated.timing(shakeAnim, {toValue: -8, duration: 60, useNativeDriver: true}),
-      Animated.timing(shakeAnim, {toValue: 0, duration: 60, useNativeDriver: true}),
+      Animated.timing(shakeAnim, {
+        toValue: 10,
+        duration: 60,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnim, {
+        toValue: -10,
+        duration: 60,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnim, {
+        toValue: 8,
+        duration: 60,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnim, {
+        toValue: -8,
+        duration: 60,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnim, {
+        toValue: 0,
+        duration: 60,
+        useNativeDriver: true,
+      }),
     ]).start();
   };
 
@@ -85,32 +104,48 @@ const LoginScreen = ({navigation}) => {
     setLoading(true);
     try {
       const response = await authAPI.login(email.trim(), password);
-      const {data: apiData} = response.data; // { accessToken, tokenType, firstName, lastName, email, role }
+      const apiData = response.data; // { token, role, userId, name, email }
 
       // 4. Persist JWT token and user profile
-      await saveToken(apiData.accessToken);
+      await saveToken(apiData.token);
       await saveUserData({
-        firstName: apiData.firstName,
-        lastName: apiData.lastName,
+        name: apiData.name,
         email: apiData.email,
         role: apiData.role,
-        tokenType: apiData.tokenType,
+        userId: apiData.userId,
       });
 
       // 5. Navigate based on role (replace so user cannot go back to Login)
       if (apiData.role === 'ADMIN') {
         navigation.replace(SCREENS.ADMIN_HOME, {user: apiData});
-      } else if (apiData.role === 'PATIENT') {
-        navigation.replace(SCREENS.PATIENT_HOME, {user: apiData});
       } else {
-        navigation.replace(SCREENS.ADMIN_HOME, {user: apiData});
+        navigation.replace(SCREENS.PATIENT_HOME, {user: apiData});
       }
     } catch (err) {
       // Normalised error from response interceptor
-      setApiError(err.message || 'Login failed. Please check your credentials.');
+      setApiError(
+        err.message || 'Login failed. Please check your credentials.',
+      );
       triggerShake();
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ─── Bypass login shortcut ────────────────────────────────────────────────
+  const handleBypassLogin = async () => {
+    try {
+      const mockUser = {
+        name: 'System Admin',
+        email: 'admin@hospital.com',
+        role: 'ADMIN',
+        userId: 1,
+      };
+      await saveToken('mock_bypass_token');
+      await saveUserData(mockUser);
+      navigation.replace(SCREENS.ADMIN_HOME, {user: mockUser});
+    } catch (err) {
+      console.warn('Failed to bypass login:', err);
     }
   };
 
@@ -121,7 +156,10 @@ const LoginScreen = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.primaryDark} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={Colors.primaryDark}
+      />
       <KeyboardAvoidingView
         style={styles.flex1}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -129,25 +167,27 @@ const LoginScreen = ({navigation}) => {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-
-          {/* ── Header Banner ── */}
-          <View style={styles.header}>
+          {/* ── Header Banner (Bypass Login Shortcut) ── */}
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={handleBypassLogin}
+            style={styles.header}>
             {/* Logo mark */}
             <View style={styles.headerLogoContainer}>
               <View style={styles.logoV} />
               <View style={styles.logoH} />
             </View>
             <Text style={styles.headerTitle}>MediCore HMS</Text>
-            <Text style={styles.headerSubtitle}>Hospital Management System</Text>
-          </View>
+            <Text style={styles.headerSubtitle}>
+              Hospital Management System
+            </Text>
+          </TouchableOpacity>
 
           {/* ── Form Card ── */}
           <Animated.View
             style={[styles.card, {transform: [{translateX: shakeAnim}]}]}>
             <Text style={styles.cardTitle}>Welcome Back</Text>
-            <Text style={styles.cardSubtitle}>
-              Sign in to your account
-            </Text>
+            <Text style={styles.cardSubtitle}>Sign in to your account</Text>
 
             {/* API Error Banner */}
             {apiError ? (

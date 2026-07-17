@@ -54,7 +54,6 @@ const AppNavigator = () => {
       <Stack.Navigator
         initialRouteName={SCREENS.SPLASH}
         screenOptions={defaultScreenOptions}>
-
         {/* ── Splash ── */}
         <Stack.Screen
           name={SCREENS.SPLASH}

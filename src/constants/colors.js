@@ -5,14 +5,14 @@
 
 export const Colors = {
   // ─── Primary Blues ────────────────────────────────────────────────────────
-  primary: '#1565C0',         // Deep royal blue — main brand color
-  primaryDark: '#0D47A1',     // Darker shade for pressed states
-  primaryLight: '#1E88E5',    // Lighter shade for accents
+  primary: '#1565C0', // Deep royal blue — main brand color
+  primaryDark: '#0D47A1', // Darker shade for pressed states
+  primaryLight: '#1E88E5', // Lighter shade for accents
   primaryExtraLight: '#BBDEFB', // Very light blue for backgrounds
 
   // ─── Secondary / Accent ───────────────────────────────────────────────────
-  accent: '#0288D1',          // Sky blue accent
-  accentLight: '#B3E5FC',     // Pale sky blue
+  accent: '#0288D1', // Sky blue accent
+  accentLight: '#B3E5FC', // Pale sky blue
 
   // ─── Gradient Stops ───────────────────────────────────────────────────────
   gradientStart: '#1565C0',
@@ -20,18 +20,18 @@ export const Colors = {
 
   // ─── Neutrals ─────────────────────────────────────────────────────────────
   white: '#FFFFFF',
-  offWhite: '#F5F8FF',        // Slight blue tint
-  background: '#EEF4FF',      // App background
-  surface: '#FFFFFF',         // Card / modal background
-  border: '#D0E3FF',          // Input borders
+  offWhite: '#F5F8FF', // Slight blue tint
+  background: '#EEF4FF', // App background
+  surface: '#FFFFFF', // Card / modal background
+  border: '#D0E3FF', // Input borders
   divider: '#E3EDFF',
 
   // ─── Text ─────────────────────────────────────────────────────────────────
-  textPrimary: '#0D1B2E',     // Near-black for headings
-  textSecondary: '#4A6080',   // Grey-blue for body
-  textMuted: '#90A4AE',       // Placeholders / hints
-  textOnPrimary: '#FFFFFF',   // White text on dark blue bg
-  textLink: '#1E88E5',        // Clickable links
+  textPrimary: '#0D1B2E', // Near-black for headings
+  textSecondary: '#4A6080', // Grey-blue for body
+  textMuted: '#90A4AE', // Placeholders / hints
+  textOnPrimary: '#FFFFFF', // White text on dark blue bg
+  textLink: '#1E88E5', // Clickable links
 
   // ─── Status Colors ────────────────────────────────────────────────────────
   success: '#2E7D32',

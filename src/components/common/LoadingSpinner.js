@@ -8,13 +8,7 @@
  */
 
 import React from 'react';
-import {
-  View,
-  ActivityIndicator,
-  Text,
-  StyleSheet,
-  Modal,
-} from 'react-native';
+import {View, ActivityIndicator, Text, StyleSheet, Modal} from 'react-native';
 import Colors from '../../constants/colors';
 import {FontSize, FontWeight} from '../../constants/typography';
 
@@ -37,9 +31,7 @@ const LoadingSpinner = ({
         <View style={styles.overlay}>
           <View style={styles.card}>
             <ActivityIndicator size="large" color={Colors.primary} />
-            {message ? (
-              <Text style={styles.message}>{message}</Text>
-            ) : null}
+            {message ? <Text style={styles.message}>{message}</Text> : null}
           </View>
         </View>
       </Modal>

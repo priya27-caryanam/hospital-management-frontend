@@ -1,16 +1,11 @@
 /**
  * RegisterScreen
  *
- * Admin-only screen to create staff accounts.
+ * Supports both:
+ *  1. Patient Self-Registration (navigated from Login Screen, isAdminRegister = false)
+ *  2. Admin Staff Registration (navigated from Admin Dashboard, isAdminRegister = true)
  *
- * Form fields (matching backend RegisterUserRequest DTO exactly):
- *   firstName, lastName, email, phoneNumber, dateOfBirth (YYYY-MM-DD),
- *   gender (MALE/FEMALE/OTHER), role, password, confirmPassword
- *
- * API: POST /api/v1/users/register
- * Requires JWT Bearer token (injected via axios interceptor).
- *
- * Note: confirmPassword is a UI-only field — NOT sent to backend.
+ * Form fields match the respective backend DTOs exactly.
  */
 
 import React, {useState} from 'react';
@@ -27,8 +22,7 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import {userAPI} from '../services/api';
-import {validateRegisterForm} from '../utils/validation';
+import {authAPI} from '../services/api';
 import Colors from '../constants/colors';
 import {FontSize, FontWeight} from '../constants/typography';
 import Config from '../constants/config';
@@ -37,9 +31,15 @@ import Input from '../components/common/Input';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 // ─── Dropdown Picker Component (inline, no third-party dependency) ────────────
-const DropdownPicker = ({label, value, options, onSelect, error, placeholder}) => {
+const DropdownPicker = ({
+  label,
+  value,
+  options,
+  onSelect,
+  error,
+  placeholder,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
-
   const selectedLabel = options.find(o => o.value === value)?.label || '';
 
   return (
@@ -132,7 +132,10 @@ const pickerStyles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   selectorOpen: {borderColor: Colors.primary, borderWidth: 2},
-  selectorError: {borderColor: Colors.error, backgroundColor: Colors.errorLight},
+  selectorError: {
+    borderColor: Colors.error,
+    backgroundColor: Colors.errorLight,
+  },
   selectorText: {
     fontSize: FontSize.base,
     color: Colors.textPrimary,
@@ -240,20 +243,63 @@ const sectionStyles = StyleSheet.create({
   },
 });
 
+const STAFF_ROLES = [
+  {label: 'Doctor', value: 'DOCTOR'},
+  {label: 'Nurse', value: 'NURSE'},
+  {label: 'Receptionist', value: 'RECEPTIONIST'},
+];
+
+const SHIFTS = [
+  {label: 'Morning', value: 'MORNING'},
+  {label: 'Evening', value: 'EVENING'},
+  {label: 'Night', value: 'NIGHT'},
+];
+
+const BLOOD_GROUPS = [
+  {label: 'A+', value: 'A+'},
+  {label: 'A-', value: 'A-'},
+  {label: 'B+', value: 'B+'},
+  {label: 'B-', value: 'B-'},
+  {label: 'AB+', value: 'AB+'},
+  {label: 'AB-', value: 'AB-'},
+  {label: 'O+', value: 'O+'},
+  {label: 'O-', value: 'O-'},
+];
+
 // ─── Main Component ───────────────────────────────────────────────────────────
-const RegisterScreen = ({navigation}) => {
+const RegisterScreen = ({navigation, route}) => {
+  const isAdminRegister = route?.params?.isAdminRegister || false;
+
   // ─── Form State ────────────────────────────────────────────────────────────
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
     email: '',
-    phoneNumber: '',
-    dateOfBirth: '',
-    gender: '',
-    role: 'PATIENT',
+    mobile: '',
     password: '',
     confirmPassword: '',
+    gender: '',
+    role: isAdminRegister ? 'DOCTOR' : 'PATIENT',
+    // Patient details
+    dateOfBirth: '',
+    bloodGroup: '',
+    height: '',
+    weight: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+    emergencyContact: '',
+    // Staff details
+    departmentId: '',
+    qualification: '',
+    experience: '',
+    specialization: '',
+    consultationFee: '',
+    licenseNumber: '',
+    shift: '',
   });
+
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
@@ -262,7 +308,6 @@ const RegisterScreen = ({navigation}) => {
   // ─── Field update helper ────────────────────────────────────────────────────
   const updateField = (field, value) => {
     setForm(prev => ({...prev, [field]: value}));
-    // Clear error for this field on change
     if (errors[field]) {
       setErrors(prev => ({...prev, [field]: undefined}));
     }
@@ -275,41 +320,237 @@ const RegisterScreen = ({navigation}) => {
     setApiError('');
     setSuccessMessage('');
 
-    // 1. Validate
-    const formErrors = validateRegisterForm(form);
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
+    // 1. Validate Form Fields locally based on active role
+    const valErrors = {};
+    if (!form.firstName.trim()) {
+      valErrors.firstName = 'First name is required';
+    }
+    if (!form.lastName.trim()) {
+      valErrors.lastName = 'Last name is required';
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!form.email.trim()) {
+      valErrors.email = 'Email is required';
+    } else if (!emailRegex.test(form.email.trim())) {
+      valErrors.email = 'Invalid email format';
+    }
+
+    const mobileRegex = /^[6-9]\d{9}$/;
+    if (!form.mobile.trim()) {
+      valErrors.mobile = 'Mobile number is required';
+    } else if (!mobileRegex.test(form.mobile.trim())) {
+      valErrors.mobile = 'Must be 10 digits and start with 6-9';
+    }
+
+    if (!form.gender) {
+      valErrors.gender = 'Gender is required';
+    }
+
+    const pwdRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+    if (!form.password) {
+      valErrors.password = 'Password is required';
+    } else if (!pwdRegex.test(form.password)) {
+      valErrors.password =
+        'Min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char';
+    }
+
+    if (form.password !== form.confirmPassword) {
+      valErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    // Role-specific validation
+    if (form.role === 'PATIENT') {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!form.dateOfBirth.trim()) {
+        valErrors.dateOfBirth = 'Date of birth is required';
+      } else if (!dateRegex.test(form.dateOfBirth.trim())) {
+        valErrors.dateOfBirth = 'Must be in YYYY-MM-DD format';
+      }
+
+      if (!form.bloodGroup) {
+        valErrors.bloodGroup = 'Blood group is required';
+      }
+
+      if (!form.address.trim()) {
+        valErrors.address = 'Address is required';
+      }
+      if (!form.city.trim()) {
+        valErrors.city = 'City is required';
+      }
+      if (!form.state.trim()) {
+        valErrors.state = 'State is required';
+      }
+      if (!form.pincode.trim()) {
+        valErrors.pincode = 'Pincode is required';
+      }
+
+      if (!form.emergencyContact.trim()) {
+        valErrors.emergencyContact = 'Emergency contact is required';
+      } else if (!mobileRegex.test(form.emergencyContact.trim())) {
+        valErrors.emergencyContact = 'Must be 10 digits and start with 6-9';
+      }
+    } else if (form.role === 'DOCTOR') {
+      if (!form.departmentId.trim()) {
+        valErrors.departmentId = 'Department ID is required';
+      } else if (isNaN(form.departmentId.trim())) {
+        valErrors.departmentId = 'Must be a number';
+      }
+
+      if (!form.qualification.trim()) {
+        valErrors.qualification = 'Qualification is required';
+      }
+
+      if (!form.experience.trim()) {
+        valErrors.experience = 'Experience is required';
+      } else if (isNaN(form.experience.trim())) {
+        valErrors.experience = 'Must be a number';
+      }
+
+      if (!form.specialization.trim()) {
+        valErrors.specialization = 'Specialization is required';
+      }
+
+      if (!form.consultationFee.trim()) {
+        valErrors.consultationFee = 'Consultation fee is required';
+      } else if (isNaN(form.consultationFee.trim())) {
+        valErrors.consultationFee = 'Must be a number';
+      }
+
+      if (!form.licenseNumber.trim()) {
+        valErrors.licenseNumber = 'License number is required';
+      }
+    } else if (form.role === 'NURSE') {
+      if (!form.qualification.trim()) {
+        valErrors.qualification = 'Qualification is required';
+      }
+
+      if (!form.experience.trim()) {
+        valErrors.experience = 'Experience is required';
+      } else if (isNaN(form.experience.trim())) {
+        valErrors.experience = 'Must be a number';
+      }
+
+      if (!form.departmentId.trim()) {
+        valErrors.departmentId = 'Department ID is required';
+      } else if (isNaN(form.departmentId.trim())) {
+        valErrors.departmentId = 'Must be a number';
+      }
+
+      if (!form.shift) {
+        valErrors.shift = 'Shift is required';
+      }
+    } else if (form.role === 'RECEPTIONIST') {
+      if (!form.qualification.trim()) {
+        valErrors.qualification = 'Qualification is required';
+      }
+      if (!form.shift) {
+        valErrors.shift = 'Shift is required';
+      }
+    }
+
+    if (Object.keys(valErrors).length > 0) {
+      setErrors(valErrors);
       return;
     }
 
-    // 2. Build backend payload (exclude confirmPassword)
-    const payload = {
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      email: form.email.trim(),
-      password: form.password,
-      phoneNumber: form.phoneNumber.trim(),
-      dateOfBirth: form.dateOfBirth.trim(), // Backend expects LocalDate: "YYYY-MM-DD"
-      gender: form.gender,
-      role: form.role,
-    };
-
+    // 2. Dispatch payload
     setLoading(true);
     try {
-      await userAPI.registerUser(payload);
+      if (form.role === 'PATIENT') {
+        const payload = {
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          email: form.email.trim(),
+          mobile: form.mobile.trim(),
+          password: form.password,
+          gender: form.gender,
+          dateOfBirth: form.dateOfBirth.trim(),
+          bloodGroup: form.bloodGroup,
+          height: form.height.trim() ? parseFloat(form.height.trim()) : null,
+          weight: form.weight.trim() ? parseFloat(form.weight.trim()) : null,
+          address: form.address.trim(),
+          city: form.city.trim(),
+          state: form.state.trim(),
+          pincode: form.pincode.trim(),
+          emergencyContact: form.emergencyContact.trim(),
+        };
+        await authAPI.registerPatient(payload);
+        setSuccessMessage('Patient registered successfully! 🎉');
+      } else if (form.role === 'DOCTOR') {
+        const payload = {
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          email: form.email.trim(),
+          mobile: form.mobile.trim(),
+          password: form.password,
+          gender: form.gender,
+          departmentId: parseInt(form.departmentId.trim(), 10),
+          qualification: form.qualification.trim(),
+          experience: parseInt(form.experience.trim(), 10),
+          specialization: form.specialization.trim(),
+          consultationFee: parseFloat(form.consultationFee.trim()),
+          licenseNumber: form.licenseNumber.trim(),
+        };
+        await authAPI.registerDoctor(payload);
+        setSuccessMessage('Doctor registered successfully! 🎉');
+      } else if (form.role === 'NURSE') {
+        const payload = {
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          email: form.email.trim(),
+          mobile: form.mobile.trim(),
+          password: form.password,
+          gender: form.gender,
+          qualification: form.qualification.trim(),
+          experience: parseInt(form.experience.trim(), 10),
+          departmentId: parseInt(form.departmentId.trim(), 10),
+          shift: form.shift,
+        };
+        await authAPI.registerNurse(payload);
+        setSuccessMessage('Nurse registered successfully! 🎉');
+      } else if (form.role === 'RECEPTIONIST') {
+        const payload = {
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          email: form.email.trim(),
+          mobile: form.mobile.trim(),
+          password: form.password,
+          gender: form.gender,
+          qualification: form.qualification.trim(),
+          shift: form.shift,
+        };
+        await authAPI.registerReceptionist(payload);
+        setSuccessMessage('Receptionist registered successfully! 🎉');
+      }
 
-      // 3. Show success and reset form
-      setSuccessMessage('Patient account registered successfully! 🎉');
+      // Reset form fields
       setForm({
         firstName: '',
         lastName: '',
         email: '',
-        phoneNumber: '',
-        dateOfBirth: '',
-        gender: '',
-        role: 'PATIENT',
+        mobile: '',
         password: '',
         confirmPassword: '',
+        gender: '',
+        role: isAdminRegister ? 'DOCTOR' : 'PATIENT',
+        dateOfBirth: '',
+        bloodGroup: '',
+        height: '',
+        weight: '',
+        address: '',
+        city: '',
+        state: '',
+        pincode: '',
+        emergencyContact: '',
+        departmentId: '',
+        qualification: '',
+        experience: '',
+        specialization: '',
+        consultationFee: '',
+        licenseNumber: '',
+        shift: '',
       });
       setErrors({});
     } catch (err) {
@@ -321,21 +562,27 @@ const RegisterScreen = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.primaryDark} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={Colors.primaryDark}
+      />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-
         {/* ── Page header ── */}
         <View style={styles.pageHeader}>
           <View style={styles.pageHeaderIcon}>
             <Text style={styles.pageHeaderEmoji}>👤</Text>
           </View>
           <View style={styles.pageHeaderText}>
-            <Text style={styles.pageTitle}>Register Patient</Text>
+            <Text style={styles.pageTitle}>
+              {isAdminRegister ? 'Register Staff' : 'Register Patient'}
+            </Text>
             <Text style={styles.pageSubtitle}>
-              Create a  new patient account
+              {isAdminRegister
+                ? 'Add new medical professionals'
+                : 'Create a new patient account'}
             </Text>
           </View>
         </View>
@@ -357,6 +604,20 @@ const RegisterScreen = ({navigation}) => {
 
         {/* ── Form card ── */}
         <View style={styles.card}>
+          {isAdminRegister && (
+            <>
+              <SectionHeader title="Staff Role Selection" icon="⚙️" />
+              <DropdownPicker
+                label="Select Role"
+                value={form.role}
+                options={STAFF_ROLES}
+                onSelect={val => updateField('role', val)}
+                placeholder="Select role"
+                error={errors.role}
+              />
+              <View style={styles.sectionDivider} />
+            </>
+          )}
 
           {/* Personal Information */}
           <SectionHeader title="Personal Information" icon="👤" />
@@ -398,23 +659,12 @@ const RegisterScreen = ({navigation}) => {
           {/* Mobile Number */}
           <Input
             label="Mobile Number"
-            value={form.phoneNumber}
-            onChangeText={text => updateField('phoneNumber', text)}
+            value={form.mobile}
+            onChangeText={text => updateField('mobile', text)}
             placeholder="10-digit Indian mobile (e.g. 9876543210)"
             keyboardType="phone-pad"
-            error={errors.phoneNumber}
+            error={errors.mobile}
             leftIcon={<Text style={styles.fieldIcon}>📱</Text>}
-          />
-
-          {/* Date of Birth */}
-          <Input
-            label="Date of Birth"
-            value={form.dateOfBirth}
-            onChangeText={text => updateField('dateOfBirth', text)}
-            placeholder="YYYY-MM-DD (e.g. 1990-05-15)"
-            keyboardType="numeric"
-            error={errors.dateOfBirth}
-            leftIcon={<Text style={styles.fieldIcon}>🎂</Text>}
           />
 
           {/* Gender dropdown */}
@@ -427,7 +677,240 @@ const RegisterScreen = ({navigation}) => {
             error={errors.gender}
           />
 
-          {/* Divider */}
+          {/* ── Patient Specific Fields ── */}
+          {form.role === 'PATIENT' && (
+            <>
+              <View style={styles.sectionDivider} />
+              <SectionHeader title="Patient Medical & Contact Info" icon="🩺" />
+
+              <Input
+                label="Date of Birth"
+                value={form.dateOfBirth}
+                onChangeText={text => updateField('dateOfBirth', text)}
+                placeholder="YYYY-MM-DD (e.g. 1990-05-15)"
+                keyboardType="numeric"
+                error={errors.dateOfBirth}
+                leftIcon={<Text style={styles.fieldIcon}>🎂</Text>}
+              />
+
+              <DropdownPicker
+                label="Blood Group"
+                value={form.bloodGroup}
+                options={BLOOD_GROUPS}
+                onSelect={val => updateField('bloodGroup', val)}
+                placeholder="Select blood group"
+                error={errors.bloodGroup}
+              />
+
+              <Input
+                label="Height (cm)"
+                value={form.height}
+                onChangeText={text => updateField('height', text)}
+                placeholder="e.g. 175"
+                keyboardType="numeric"
+                error={errors.height}
+                leftIcon={<Text style={styles.fieldIcon}>📏</Text>}
+              />
+
+              <Input
+                label="Weight (kg)"
+                value={form.weight}
+                onChangeText={text => updateField('weight', text)}
+                placeholder="e.g. 70"
+                keyboardType="numeric"
+                error={errors.weight}
+                leftIcon={<Text style={styles.fieldIcon}>⚖️</Text>}
+              />
+
+              <Input
+                label="Address"
+                value={form.address}
+                onChangeText={text => updateField('address', text)}
+                placeholder="Enter street address"
+                error={errors.address}
+                leftIcon={<Text style={styles.fieldIcon}>🏠</Text>}
+              />
+
+              <Input
+                label="City"
+                value={form.city}
+                onChangeText={text => updateField('city', text)}
+                placeholder="Enter city"
+                error={errors.city}
+                leftIcon={<Text style={styles.fieldIcon}>🌆</Text>}
+              />
+
+              <Input
+                label="State"
+                value={form.state}
+                onChangeText={text => updateField('state', text)}
+                placeholder="Enter state"
+                error={errors.state}
+                leftIcon={<Text style={styles.fieldIcon}>📍</Text>}
+              />
+
+              <Input
+                label="Pincode"
+                value={form.pincode}
+                onChangeText={text => updateField('pincode', text)}
+                placeholder="Enter 6-digit pin code"
+                keyboardType="numeric"
+                error={errors.pincode}
+                leftIcon={<Text style={styles.fieldIcon}>📮</Text>}
+              />
+
+              <Input
+                label="Emergency Contact Number"
+                value={form.emergencyContact}
+                onChangeText={text => updateField('emergencyContact', text)}
+                placeholder="10-digit emergency phone number"
+                keyboardType="phone-pad"
+                error={errors.emergencyContact}
+                leftIcon={<Text style={styles.fieldIcon}>🚨</Text>}
+              />
+            </>
+          )}
+
+          {/* ── Doctor Specific Fields ── */}
+          {form.role === 'DOCTOR' && (
+            <>
+              <View style={styles.sectionDivider} />
+              <SectionHeader
+                title="Doctor Qualifications & License"
+                icon="🎓"
+              />
+
+              <Input
+                label="Department ID (Numeric)"
+                value={form.departmentId}
+                onChangeText={text => updateField('departmentId', text)}
+                placeholder="e.g. 1"
+                keyboardType="numeric"
+                error={errors.departmentId}
+                leftIcon={<Text style={styles.fieldIcon}>🏢</Text>}
+              />
+
+              <Input
+                label="Qualification"
+                value={form.qualification}
+                onChangeText={text => updateField('qualification', text)}
+                placeholder="e.g. MBBS, MD"
+                error={errors.qualification}
+                leftIcon={<Text style={styles.fieldIcon}>📜</Text>}
+              />
+
+              <Input
+                label="Experience (Years)"
+                value={form.experience}
+                onChangeText={text => updateField('experience', text)}
+                placeholder="e.g. 8"
+                keyboardType="numeric"
+                error={errors.experience}
+                leftIcon={<Text style={styles.fieldIcon}>⏳</Text>}
+              />
+
+              <Input
+                label="Specialization"
+                value={form.specialization}
+                onChangeText={text => updateField('specialization', text)}
+                placeholder="e.g. Cardiology"
+                error={errors.specialization}
+                leftIcon={<Text style={styles.fieldIcon}>🎯</Text>}
+              />
+
+              <Input
+                label="Consultation Fee (INR)"
+                value={form.consultationFee}
+                onChangeText={text => updateField('consultationFee', text)}
+                placeholder="e.g. 500"
+                keyboardType="numeric"
+                error={errors.consultationFee}
+                leftIcon={<Text style={styles.fieldIcon}>💵</Text>}
+              />
+
+              <Input
+                label="License Number"
+                value={form.licenseNumber}
+                onChangeText={text => updateField('licenseNumber', text)}
+                placeholder="Enter medical license number"
+                error={errors.licenseNumber}
+                leftIcon={<Text style={styles.fieldIcon}>💳</Text>}
+              />
+            </>
+          )}
+
+          {/* ── Nurse Specific Fields ── */}
+          {form.role === 'NURSE' && (
+            <>
+              <View style={styles.sectionDivider} />
+              <SectionHeader title="Nurse details" icon="🩺" />
+
+              <Input
+                label="Qualification"
+                value={form.qualification}
+                onChangeText={text => updateField('qualification', text)}
+                placeholder="e.g. B.Sc Nursing"
+                error={errors.qualification}
+                leftIcon={<Text style={styles.fieldIcon}>📜</Text>}
+              />
+
+              <Input
+                label="Experience (Years)"
+                value={form.experience}
+                onChangeText={text => updateField('experience', text)}
+                placeholder="e.g. 4"
+                keyboardType="numeric"
+                error={errors.experience}
+                leftIcon={<Text style={styles.fieldIcon}>⏳</Text>}
+              />
+
+              <Input
+                label="Department ID (Numeric)"
+                value={form.departmentId}
+                onChangeText={text => updateField('departmentId', text)}
+                placeholder="e.g. 1"
+                keyboardType="numeric"
+                error={errors.departmentId}
+                leftIcon={<Text style={styles.fieldIcon}>🏢</Text>}
+              />
+
+              <DropdownPicker
+                label="Work Shift"
+                value={form.shift}
+                options={SHIFTS}
+                onSelect={val => updateField('shift', val)}
+                placeholder="Select shift"
+                error={errors.shift}
+              />
+            </>
+          )}
+
+          {/* ── Receptionist Specific Fields ── */}
+          {form.role === 'RECEPTIONIST' && (
+            <>
+              <View style={styles.sectionDivider} />
+              <SectionHeader title="Receptionist details" icon="🖥️" />
+
+              <Input
+                label="Qualification"
+                value={form.qualification}
+                onChangeText={text => updateField('qualification', text)}
+                placeholder="e.g. Graduate"
+                error={errors.qualification}
+                leftIcon={<Text style={styles.fieldIcon}>📜</Text>}
+              />
+
+              <DropdownPicker
+                label="Work Shift"
+                value={form.shift}
+                options={SHIFTS}
+                onSelect={val => updateField('shift', val)}
+                placeholder="Select shift"
+                error={errors.shift}
+              />
+            </>
+          )}
+
           <View style={styles.sectionDivider} />
 
           {/* Account Security */}
@@ -468,9 +951,7 @@ const RegisterScreen = ({navigation}) => {
             style={styles.backRow}
             onPress={() => navigation.goBack()}
             hitSlop={{top: 8, bottom: 8}}>
-            <Text style={styles.backText}>
-              ← Back to Login
-            </Text>
+            <Text style={styles.backText}>← Back to Login</Text>
           </TouchableOpacity>
         </View>
 
