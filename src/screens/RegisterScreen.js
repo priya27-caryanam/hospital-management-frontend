@@ -8,7 +8,7 @@
  * Form fields match the respective backend DTOs exactly.
  */
 
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -22,7 +22,8 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import {authAPI} from '../services/api';
+import {authAPI, departmentAPI} from '../services/api';
+import {localDB} from '../utils/localDB';
 import Colors from '../constants/colors';
 import {FontSize, FontWeight} from '../constants/typography';
 import Config from '../constants/config';
@@ -304,6 +305,32 @@ const RegisterScreen = ({navigation, route}) => {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [departments, setDepartments] = useState([]);
+
+  // Load departments for Doctor/Nurse dropdowns
+  useEffect(
+    () => {
+      if (isAdminRegister) {
+        departmentAPI
+          .getAll()
+          .then(res => {
+            const list = Array.isArray(res.data) ? res.data : [];
+            setDepartments(
+              list.map(d => ({
+                label: d.departmentName || d.name || `Dept ${d.id}`,
+                value: String(d.id),
+              })),
+            );
+          })
+          .catch(() => {
+            // If fetch fails, user can still type ID manually
+            setDepartments([]);
+          });
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isAdminRegister],
+  );
 
   // ─── Field update helper ────────────────────────────────────────────────────
   const updateField = (field, value) => {
@@ -476,7 +503,16 @@ const RegisterScreen = ({navigation, route}) => {
           pincode: form.pincode.trim(),
           emergencyContact: form.emergencyContact.trim(),
         };
-        await authAPI.registerPatient(payload);
+        let response = null;
+        try {
+          response = await authAPI.registerPatient(payload);
+        } catch (apiErr) {
+          console.warn('[RegisterPatient API Error, saving locally only]:', apiErr);
+        }
+        await localDB.addPatient({
+          ...payload,
+          id: response?.data?.id || Date.now(),
+        });
         setSuccessMessage('Patient registered successfully! 🎉');
       } else if (form.role === 'DOCTOR') {
         const payload = {
@@ -493,7 +529,16 @@ const RegisterScreen = ({navigation, route}) => {
           consultationFee: parseFloat(form.consultationFee.trim()),
           licenseNumber: form.licenseNumber.trim(),
         };
-        await authAPI.registerDoctor(payload);
+        let response = null;
+        try {
+          response = await authAPI.registerDoctor(payload);
+        } catch (apiErr) {
+          console.warn('[RegisterDoctor API Error, saving locally only]:', apiErr);
+        }
+        await localDB.addDoctor({
+          ...payload,
+          id: response?.data?.id || Date.now(),
+        });
         setSuccessMessage('Doctor registered successfully! 🎉');
       } else if (form.role === 'NURSE') {
         const payload = {
@@ -508,7 +553,16 @@ const RegisterScreen = ({navigation, route}) => {
           departmentId: parseInt(form.departmentId.trim(), 10),
           shift: form.shift,
         };
-        await authAPI.registerNurse(payload);
+        let response = null;
+        try {
+          response = await authAPI.registerNurse(payload);
+        } catch (apiErr) {
+          console.warn('[RegisterNurse API Error, saving locally only]:', apiErr);
+        }
+        await localDB.addNurse({
+          ...payload,
+          id: response?.data?.id || Date.now(),
+        });
         setSuccessMessage('Nurse registered successfully! 🎉');
       } else if (form.role === 'RECEPTIONIST') {
         const payload = {
@@ -521,7 +575,16 @@ const RegisterScreen = ({navigation, route}) => {
           qualification: form.qualification.trim(),
           shift: form.shift,
         };
-        await authAPI.registerReceptionist(payload);
+        let response = null;
+        try {
+          response = await authAPI.registerReceptionist(payload);
+        } catch (apiErr) {
+          console.warn('[RegisterReceptionist API Error, saving locally only]:', apiErr);
+        }
+        await localDB.addReceptionist({
+          ...payload,
+          id: response?.data?.id || Date.now(),
+        });
         setSuccessMessage('Receptionist registered successfully! 🎉');
       }
 
@@ -780,15 +843,26 @@ const RegisterScreen = ({navigation, route}) => {
                 icon="🎓"
               />
 
-              <Input
-                label="Department ID (Numeric)"
-                value={form.departmentId}
-                onChangeText={text => updateField('departmentId', text)}
-                placeholder="e.g. 1"
-                keyboardType="numeric"
-                error={errors.departmentId}
-                leftIcon={<Text style={styles.fieldIcon}>🏢</Text>}
-              />
+              {departments.length > 0 ? (
+                <DropdownPicker
+                  label="Department"
+                  value={form.departmentId}
+                  options={departments}
+                  onSelect={val => updateField('departmentId', val)}
+                  placeholder="Select department"
+                  error={errors.departmentId}
+                />
+              ) : (
+                <Input
+                  label="Department ID (Numeric)"
+                  value={form.departmentId}
+                  onChangeText={text => updateField('departmentId', text)}
+                  placeholder="e.g. 1"
+                  keyboardType="numeric"
+                  error={errors.departmentId}
+                  leftIcon={<Text style={styles.fieldIcon}>🏢</Text>}
+                />
+              )}
 
               <Input
                 label="Qualification"
@@ -864,15 +938,26 @@ const RegisterScreen = ({navigation, route}) => {
                 leftIcon={<Text style={styles.fieldIcon}>⏳</Text>}
               />
 
-              <Input
-                label="Department ID (Numeric)"
-                value={form.departmentId}
-                onChangeText={text => updateField('departmentId', text)}
-                placeholder="e.g. 1"
-                keyboardType="numeric"
-                error={errors.departmentId}
-                leftIcon={<Text style={styles.fieldIcon}>🏢</Text>}
-              />
+              {departments.length > 0 ? (
+                <DropdownPicker
+                  label="Department"
+                  value={form.departmentId}
+                  options={departments}
+                  onSelect={val => updateField('departmentId', val)}
+                  placeholder="Select department"
+                  error={errors.departmentId}
+                />
+              ) : (
+                <Input
+                  label="Department ID (Numeric)"
+                  value={form.departmentId}
+                  onChangeText={text => updateField('departmentId', text)}
+                  placeholder="e.g. 1"
+                  keyboardType="numeric"
+                  error={errors.departmentId}
+                  leftIcon={<Text style={styles.fieldIcon}>🏢</Text>}
+                />
+              )}
 
               <DropdownPicker
                 label="Work Shift"

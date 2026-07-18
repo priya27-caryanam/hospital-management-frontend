@@ -9,7 +9,8 @@
 
 export const Config = {
   // ─── API ──────────────────────────────────────────────────────────────────
-  API_BASE_URL: 'http://10.0.2.2:9091', // Android emulator default
+  // API_BASE_URL: 'http://10.0.2.2:9091', // Android emulator default
+  API_BASE_URL: 'http://192.168.1.3:9091',
   API_TIMEOUT: 15000, // 15 seconds
 
   // ─── App Info ─────────────────────────────────────────────────────────────

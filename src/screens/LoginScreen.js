@@ -116,10 +116,21 @@ const LoginScreen = ({navigation}) => {
       });
 
       // 5. Navigate based on role (replace so user cannot go back to Login)
-      if (apiData.role === 'ADMIN') {
-        navigation.replace(SCREENS.ADMIN_HOME, {user: apiData});
-      } else {
-        navigation.replace(SCREENS.PATIENT_HOME, {user: apiData});
+      switch (apiData.role) {
+        case 'ADMIN':
+          navigation.replace(SCREENS.ADMIN_HOME, {user: apiData});
+          break;
+        case 'DOCTOR':
+          navigation.replace(SCREENS.DOCTOR_HOME, {user: apiData});
+          break;
+        case 'NURSE':
+          navigation.replace(SCREENS.NURSE_HOME, {user: apiData});
+          break;
+        case 'RECEPTIONIST':
+          navigation.replace(SCREENS.RECEPTIONIST_HOME, {user: apiData});
+          break;
+        default:
+          navigation.replace(SCREENS.PATIENT_HOME, {user: apiData});
       }
     } catch (err) {
       // Normalised error from response interceptor
@@ -167,21 +178,33 @@ const LoginScreen = ({navigation}) => {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          {/* ── Header Banner (Bypass Login Shortcut) ── */}
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={handleBypassLogin}
-            style={styles.header}>
-            {/* Logo mark */}
-            <View style={styles.headerLogoContainer}>
-              <View style={styles.logoV} />
-              <View style={styles.logoH} />
-            </View>
-            <Text style={styles.headerTitle}>MediCore HMS</Text>
-            <Text style={styles.headerSubtitle}>
-              Hospital Management System
-            </Text>
-          </TouchableOpacity>
+          {/* ── Header Banner ── */}
+          <View style={styles.header}>
+            {/* Back Button */}
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.navigate(SCREENS.WELCOME)}
+              hitSlop={{top: 15, bottom: 15, left: 15, right: 15}}
+              activeOpacity={0.7}>
+              <Text style={styles.backButtonText}>←</Text>
+            </TouchableOpacity>
+
+            {/* Logo and Titles clickable to go back */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate(SCREENS.WELCOME)}
+              style={styles.headerLogoClickable}>
+              {/* Logo mark */}
+              <View style={styles.headerLogoContainer}>
+                <View style={styles.logoV} />
+                <View style={styles.logoH} />
+              </View>
+              <Text style={styles.headerTitle}>MediCore HMS</Text>
+              <Text style={styles.headerSubtitle}>
+                Hospital Management System
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           {/* ── Form Card ── */}
           <Animated.View
@@ -260,10 +283,15 @@ const LoginScreen = ({navigation}) => {
             </View>
           </Animated.View>
 
-          {/* Bottom tagline */}
-          <Text style={styles.footerText}>
-            Caring for Life, Committed to Excellence
-          </Text>
+          {/* Bottom tagline (Allows developers to bypass login by pressing the tagline) */}
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={handleBypassLogin}
+            style={styles.footerTaglineButton}>
+            <Text style={styles.footerText}>
+              Caring for Life, Committed to Excellence
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -294,6 +322,31 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingBottom: 50,
     paddingHorizontal: 24,
+    position: 'relative',
+  },
+  headerLogoClickable: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    zIndex: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  backButtonText: {
+    color: Colors.white,
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: Platform.OS === 'ios' ? -2 : -4,
   },
   headerLogoContainer: {
     width: 72,
@@ -426,11 +479,14 @@ const styles = StyleSheet.create({
   },
 
   // Footer
+  footerTaglineButton: {
+    marginTop: 32,
+    width: '100%',
+  },
   footerText: {
     textAlign: 'center',
     fontSize: FontSize.xs,
     color: 'rgba(255,255,255,0.55)',
-    marginTop: 32,
     letterSpacing: 0.3,
     paddingHorizontal: 24,
   },

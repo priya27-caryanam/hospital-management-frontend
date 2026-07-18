@@ -115,4 +115,126 @@ export const authAPI = {
     apiClient.post('/api/auth/register/receptionist', data),
 };
 
+// ─── Department API ──────────────────────────────────────────────────────────
+
+export const departmentAPI = {
+  /** GET /api/departments — List all departments */
+  getAll: () => apiClient.get('/api/departments'),
+
+  /** GET /api/departments/{id} */
+  getById: id => apiClient.get(`/api/departments/${id}`),
+
+  /** POST /api/departments (ADMIN) */
+  create: data => apiClient.post('/api/departments', data),
+
+  /** PUT /api/departments/{id} (ADMIN) */
+  update: (id, data) => apiClient.put(`/api/departments/${id}`, data),
+
+  /** DELETE /api/departments/{id} (ADMIN) */
+  deleteById: id => apiClient.delete(`/api/departments/${id}`),
+
+  // Legacy aliases kept for backward-compatibility with ManageDepartmentsScreen
+  createDepartment: data => apiClient.post('/api/departments', data),
+  getDepartmentById: id => apiClient.get(`/api/departments/${id}`),
+};
+
+// ─── Doctor API ───────────────────────────────────────────────────────────────
+
+export const doctorAPI = {
+  /** GET /api/doctors/{id} */
+  getById: id => apiClient.get(`/api/doctors/${id}`),
+
+  /** GET /api/doctors/department/{departmentId} */
+  getByDepartment: departmentId =>
+    apiClient.get(`/api/doctors/department/${departmentId}`),
+};
+
+// ─── Patient API ──────────────────────────────────────────────────────────────
+
+export const patientAPI = {
+  /** GET /api/patients/{id} */
+  getById: id => apiClient.get(`/api/patients/${id}`),
+
+  /** GET /api/patients/search?query=... */
+  search: query => apiClient.get('/api/patients/search', {params: {query}}),
+};
+
+// ─── Appointment API ──────────────────────────────────────────────────────────
+
+export const appointmentAPI = {
+  /** POST /api/appointments */
+  book: data => apiClient.post('/api/appointments', data),
+
+  /** GET /api/appointments/{id} */
+  getById: id => apiClient.get(`/api/appointments/${id}`),
+
+  /** GET /api/appointments/patient/{patientId} */
+  getByPatient: patientId =>
+    apiClient.get(`/api/appointments/patient/${patientId}`),
+
+  /** GET /api/appointments/doctor/{doctorId} */
+  getByDoctor: doctorId =>
+    apiClient.get(`/api/appointments/doctor/${doctorId}`),
+
+  /** PUT /api/appointments/{id}/status */
+  updateStatus: (id, status) =>
+    apiClient.put(`/api/appointments/${id}/status`, {status}),
+};
+
+// ─── Billing API ──────────────────────────────────────────────────────────────
+
+export const billingAPI = {
+  /** POST /api/billings */
+  generate: data => apiClient.post('/api/billings', data),
+
+  /** GET /api/billings/appointment/{appointmentId} */
+  getByAppointment: appointmentId =>
+    apiClient.get(`/api/billings/appointment/${appointmentId}`),
+
+  /** PUT /api/billings/{id}/pay */
+  pay: id => apiClient.put(`/api/billings/${id}/pay`),
+};
+
+// ─── Prescription API ─────────────────────────────────────────────────────────
+
+export const prescriptionAPI = {
+  /** POST /api/prescriptions */
+  add: data => apiClient.post('/api/prescriptions', data),
+
+  /** GET /api/prescriptions/appointment/{appointmentId} */
+  getByAppointment: appointmentId =>
+    apiClient.get(`/api/prescriptions/appointment/${appointmentId}`),
+};
+
+// ─── Symptoms API ─────────────────────────────────────────────────────────────
+
+export const symptomsAPI = {
+  /** GET /api/symptoms */
+  getAll: () => apiClient.get('/api/symptoms'),
+
+  /** POST /api/symptoms */
+  add: data => apiClient.post('/api/symptoms', data),
+
+  /** POST /api/symptoms/suggest */
+  suggest: data => apiClient.post('/api/symptoms/suggest', data),
+};
+
+// ─── Nurse API ────────────────────────────────────────────────────────────────
+
+export const nurseAPI = {
+  /** GET /api/nurses/{id} */
+  getById: id => apiClient.get(`/api/nurses/${id}`),
+
+  /** GET /api/nurses/{nurseId}/assigned-patients */
+  getAssignedPatients: nurseId =>
+    apiClient.get(`/api/nurses/${nurseId}/assigned-patients`),
+};
+
+// ─── Receptionist API ─────────────────────────────────────────────────────────
+
+export const receptionistAPI = {
+  /** GET /api/receptionists/{id} */
+  getById: id => apiClient.get(`/api/receptionists/${id}`),
+};
+
 export default apiClient;

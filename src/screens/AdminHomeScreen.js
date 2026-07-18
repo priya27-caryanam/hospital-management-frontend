@@ -29,6 +29,8 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {clearAll, getUserData, getToken} from '../utils/storage';
+import {departmentAPI} from '../services/api';
+import {localDB} from '../utils/localDB';
 import {SCREENS} from '../navigation/AppNavigator';
 import Colors from '../constants/colors';
 import {FontSize, FontWeight} from '../constants/typography';
@@ -157,7 +159,7 @@ const AdminHomeScreen = ({navigation, route}) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
-  // Fetch dashboard stats from active backend endpoints only (GET /api/v1/admin/dashboard)
+  // Fetch dashboard stats from active backend endpoints and local DB fallback
   const fetchDashboardData = async () => {
     setError(null);
     try {
@@ -169,14 +171,37 @@ const AdminHomeScreen = ({navigation, route}) => {
         return;
       }
 
-      // Successfully loaded dashboard data, but keep counts as placeholders
+      // Read from local storage DB
+      const localDoctors = await localDB.getDoctors();
+      const localPatients = await localDB.getPatients();
+      const localAppointments = await localDB.getAppointments();
+      const localStaff = await localDB.getStaff();
+      const localDepartments = await localDB.getDepartments();
+      const localBills = await localDB.getBills();
+
+      // Combine with backend departments if available
+      let deptCount = localDepartments.length;
+      try {
+        const response = await departmentAPI.getAll();
+        if (response?.data && Array.isArray(response.data)) {
+          const backendDepts = response.data;
+          const allDeptIds = new Set([
+            ...localDepartments.map(d => String(d.id)),
+            ...backendDepts.map(d => String(d.id))
+          ]);
+          deptCount = allDeptIds.size;
+        }
+      } catch (e) {
+        console.log('[AdminHome] API Departments load skipped, using local count');
+      }
+
       setCounts({
-        doctors: '--',
-        patients: '--',
-        appointments: '--',
-        staff: '--',
-        departments: '--',
-        reports: '--',
+        doctors: localDoctors.length,
+        patients: localPatients.length,
+        appointments: localAppointments.length,
+        staff: localStaff.length,
+        departments: deptCount,
+        reports: localBills.length,
       });
     } catch (err) {
       console.error('[AdminHome] Error:', err);
@@ -192,33 +217,43 @@ const AdminHomeScreen = ({navigation, route}) => {
     setRefreshing(false);
   };
 
-  useEffect(() => {
-    // Load user data from storage if not passed via route params
-    if (!userData) {
-      getUserData().then(data => {
-        if (data) {
-          setUserData(data);
-        }
+  useEffect(
+    () => {
+      // Load user data from storage if not passed via route params
+      if (!userData) {
+        getUserData().then(data => {
+          if (data) {
+            setUserData(data);
+          }
+        });
+      }
+
+      // Load data on focus to auto-refresh when navigating back
+      const unsubscribe = navigation.addListener('focus', () => {
+        fetchDashboardData();
       });
-    }
 
-    fetchDashboardData();
+      fetchDashboardData();
 
-    // Entrance animation
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 700,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 700,
-        useNativeDriver: true,
-      }),
-    ]).start();
+      // Entrance animation
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      return unsubscribe;
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userData]);
+    [userData, navigation],
+  );
 
   // ─── Logout handler ──────────────────────────────────────────────────────
   const handleLogout = () => {
@@ -345,6 +380,34 @@ const AdminHomeScreen = ({navigation, route}) => {
       </SafeAreaView>
     );
   }
+
+  const handleCardPress = cardId => {
+    switch (cardId) {
+      case 'doctors':
+        navigation.navigate(SCREENS.DOCTORS_BY_DEPT, {
+          departmentId: null,
+          departmentName: 'All Doctors',
+        });
+        break;
+      case 'patients':
+        navigation.navigate(SCREENS.PATIENT_SEARCH);
+        break;
+      case 'appointments':
+        navigation.navigate(SCREENS.ALL_APPOINTMENTS);
+        break;
+      case 'staff':
+        navigation.navigate(SCREENS.STAFF_LIST);
+        break;
+      case 'departments':
+        navigation.navigate(SCREENS.DEPT_LIST);
+        break;
+      case 'reports':
+        navigation.navigate(SCREENS.REPORTS_LIST);
+        break;
+      default:
+        break;
+    }
+  };
 
   // ─── Admin View ───
   return (
@@ -486,7 +549,7 @@ const AdminHomeScreen = ({navigation, route}) => {
                 count={countValue}
                 icon={card.icon}
                 color={card.color}
-                onPress={() => handlePlaceholderPress(card.title)}
+                onPress={() => handleCardPress(card.id)}
                 style={styles.gridCard}
               />
             );
@@ -507,13 +570,48 @@ const AdminHomeScreen = ({navigation, route}) => {
               />
               <QuickAction
                 icon="🏢"
-                label="Manage Depts"
-                onPress={() => handlePlaceholderPress('Manage Departments')}
+                label="Departments"
+                onPress={() => navigation.navigate(SCREENS.DEPT_LIST)}
               />
               <QuickAction
                 icon="👨‍⚕️"
-                label="View Doctors"
-                onPress={() => handlePlaceholderPress('View Doctors')}
+                label="Doctors"
+                onPress={() =>
+                  navigation.navigate(SCREENS.DOCTORS_BY_DEPT, {
+                    departmentId: null,
+                    departmentName: 'All Departments',
+                  })
+                }
+              />
+              <QuickAction
+                icon="🏥"
+                label="Patients"
+                onPress={() => navigation.navigate(SCREENS.PATIENT_SEARCH)}
+              />
+              <QuickAction
+                icon="📅"
+                label="Appointments"
+                onPress={() => navigation.navigate(SCREENS.BOOK_APPOINTMENT)}
+              />
+              <QuickAction
+                icon="💊"
+                label="Prescriptions"
+                onPress={() => navigation.navigate(SCREENS.ADD_PRESCRIPTION)}
+              />
+              <QuickAction
+                icon="💰"
+                label="Billing"
+                onPress={() => navigation.navigate(SCREENS.GENERATE_BILL)}
+              />
+              <QuickAction
+                icon="🩺"
+                label="Symptoms"
+                onPress={() => navigation.navigate(SCREENS.SYMPTOMS_LIST)}
+              />
+              <QuickAction
+                icon="👩‍⚕️"
+                label="Nurses"
+                onPress={() => navigation.navigate(SCREENS.PATIENT_SEARCH)}
               />
             </View>
           </ScrollView>

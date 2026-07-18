@@ -51,7 +51,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: 16,
     overflow: 'hidden',
-    flex: 1,
     margin: 6,
     ...Platform.select({
       ios: {

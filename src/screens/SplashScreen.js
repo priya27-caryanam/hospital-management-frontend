@@ -22,81 +22,85 @@ const SplashScreen = ({navigation}) => {
   const pulseOpacity = useRef(new Animated.Value(0.6)).current;
   const taglineTranslateY = useRef(new Animated.Value(20)).current;
 
-  useEffect(() => {
-    // 1. Logo entrance animation
-    Animated.parallel([
-      Animated.spring(logoScale, {
-        toValue: 1,
-        tension: 60,
-        friction: 6,
-        useNativeDriver: true,
-      }),
-      Animated.timing(logoOpacity, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // 2. Text fade-in (delayed)
-    Animated.sequence([
-      Animated.delay(400),
+  useEffect(
+    () => {
+      // 1. Logo entrance animation
       Animated.parallel([
-        Animated.timing(textOpacity, {
+        Animated.spring(logoScale, {
           toValue: 1,
-          duration: 500,
+          tension: 60,
+          friction: 6,
           useNativeDriver: true,
         }),
-        Animated.timing(taglineTranslateY, {
-          toValue: 0,
-          duration: 500,
+        Animated.timing(logoOpacity, {
+          toValue: 1,
+          duration: 600,
           useNativeDriver: true,
         }),
-      ]),
-    ]).start();
+      ]).start();
 
-    // 3. Continuous pulse ring animation
-    const pulseLoop = Animated.loop(
+      // 2. Text fade-in (delayed)
       Animated.sequence([
+        Animated.delay(400),
         Animated.parallel([
-          Animated.timing(pulseScale, {
-            toValue: 1.4,
-            duration: 900,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0,
-            duration: 900,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(pulseScale, {
+          Animated.timing(textOpacity, {
             toValue: 1,
-            duration: 0,
+            duration: 500,
             useNativeDriver: true,
           }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0.6,
-            duration: 0,
+          Animated.timing(taglineTranslateY, {
+            toValue: 0,
+            duration: 500,
             useNativeDriver: true,
           }),
         ]),
-      ]),
-    );
-    pulseLoop.start();
+      ]).start();
 
-    // 4. Navigate to Welcome screen after splash duration
-    const timer = setTimeout(() => {
-      navigation.replace(SCREENS.WELCOME);
-    }, Config.SPLASH_DURATION);
+      // 3. Continuous pulse ring animation
+      const pulseLoop = Animated.loop(
+        Animated.sequence([
+          Animated.parallel([
+            Animated.timing(pulseScale, {
+              toValue: 1.4,
+              duration: 900,
+              useNativeDriver: true,
+            }),
+            Animated.timing(pulseOpacity, {
+              toValue: 0,
+              duration: 900,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.parallel([
+            Animated.timing(pulseScale, {
+              toValue: 1,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+            Animated.timing(pulseOpacity, {
+              toValue: 0.6,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+      );
+      pulseLoop.start();
 
-    return () => {
-      clearTimeout(timer);
-      pulseLoop.stop();
-    };
+      // 4. Navigate to Welcome screen after splash duration
+      const timer = setTimeout(() => {
+        navigation.replace(SCREENS.WELCOME);
+      }, Config.SPLASH_DURATION);
+
+      return () => {
+        clearTimeout(timer);
+        pulseLoop.stop();
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    [],
+  );
 
   return (
     <View style={styles.container}>
@@ -171,28 +175,32 @@ const LoadingDots = () => {
   const dot2 = useRef(new Animated.Value(0.3)).current;
   const dot3 = useRef(new Animated.Value(0.3)).current;
 
-  useEffect(() => {
-    const animate = dot =>
-      Animated.sequence([
-        Animated.timing(dot, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(dot, {
-          toValue: 0.3,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]);
+  useEffect(
+    () => {
+      const animate = dot =>
+        Animated.sequence([
+          Animated.timing(dot, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(dot, {
+            toValue: 0.3,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]);
 
-    const loop = Animated.loop(
-      Animated.stagger(200, [animate(dot1), animate(dot2), animate(dot3)]),
-    );
-    loop.start();
-    return () => loop.stop();
+      const loop = Animated.loop(
+        Animated.stagger(200, [animate(dot1), animate(dot2), animate(dot3)]),
+      );
+      loop.start();
+      return () => loop.stop();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    [],
+  );
 
   return (
     <View style={dotStyles.row}>

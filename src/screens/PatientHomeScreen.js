@@ -45,30 +45,34 @@ const PatientHomeScreen = ({navigation, route}) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(25)).current;
 
-  useEffect(() => {
-    // Load user data from storage if not passed via route params
-    if (!userData) {
-      getUserData().then(data => {
-        if (data) {
-          setUserData(data);
-        }
-      });
-    }
+  useEffect(
+    () => {
+      // Load user data from storage if not passed via route params
+      if (!userData) {
+        getUserData().then(data => {
+          if (data) {
+            setUserData(data);
+          }
+        });
+      }
 
-    // Run entrance animation
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 650,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 650,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [userData, fadeAnim, slideAnim]);
+      // Run entrance animation
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 650,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 650,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [userData, fadeAnim, slideAnim],
+  );
 
   // ─── Logout logic ──────────────────────────────────────────────────────────
   const handleLogout = () => {
@@ -126,17 +130,11 @@ const PatientHomeScreen = ({navigation, route}) => {
 
   // ─── Quick action handlers ─────────────────────────────────────────────────
   const handleSearchDoctor = () => {
-    Alert.alert(
-      'Search Doctor',
-      'Search specialist doctors feature is coming soon!',
-    );
+    navigation.navigate(SCREENS.SUGGEST_DEPT);
   };
 
   const handleBookAppointment = () => {
-    Alert.alert(
-      'Book Appointment',
-      'Online appointment booking schedule is coming soon!',
-    );
+    navigation.navigate(SCREENS.BOOK_APPOINTMENT);
   };
 
   return (
